@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout Tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Workout Tracker</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#f2f2f7;--card:#fff;--text:#111827;--muted:#6b7280;--border:#d1d5db;--button:#111827;--ok:#16a34a;--danger:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--text:#fff;--muted:#a1a1aa;--border:#3f3f46;--button:#fff}input,select{background:#2c2c2e;color:#fff}}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Arial,sans-serif;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+header{background:#111827;color:#fff;padding:calc(env(safe-area-inset-top) + 18px) 18px 18px;position:sticky;top:0;z-index:20}
+header h1{margin:0;font-size:28px;font-weight:800}header p{margin:4px 0 0;opacity:.75;font-size:14px}
+main{max-width:700px;margin:auto;padding:14px}.screen{display:none}.screen.active{display:block}.section-title{font-size:26px;font-weight:800;margin:10px 0 16px}
+.movement-card,.history-card,.exercise-card,.progress-card,.add-form{background:var(--card);border-radius:18px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.movement-title{font-size:13px;font-weight:800;letter-spacing:1px;color:var(--muted);margin-bottom:6px}
+.exercise-select{width:100%;font-size:19px;font-weight:700;padding:13px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);margin-bottom:10px}
+.previous{background:rgba(107,114,128,.10);border-radius:10px;padding:9px 11px;margin-bottom:13px;font-size:13px;color:var(--muted)}.previous strong{color:var(--text)}
+.round{display:grid;grid-template-columns:67px 1fr 1fr 44px;gap:7px;align-items:center;margin-bottom:9px}.round-label{font-size:13px;font-weight:700}
+input{width:100%;padding:12px 9px;border:1px solid var(--border);border-radius:10px;font-size:16px;background:var(--card);color:var(--text)}
+.complete{width:42px;height:42px;border-radius:50%;border:2px solid var(--border);background:transparent;color:var(--muted);font-size:20px;font-weight:800}.complete.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.save-button{width:100%;border:0;border-radius:15px;padding:16px;font-size:18px;font-weight:800;background:var(--button);color:#fff;cursor:pointer;margin:8px 0 12px}.secondary-button{width:100%;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-weight:700;font-size:16px}
+.tabs{position:fixed;bottom:0;left:0;right:0;height:calc(70px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(255,255,255,.95);backdrop-filter:blur(18px);border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(4,1fr);z-index:50}
+@media(prefers-color-scheme:dark){.tabs{background:rgba(28,28,30,.95);border-top-color:#333}}
+.tab{border:0;background:transparent;color:var(--muted);font-size:12px;font-weight:700}.tab.active{color:var(--text)}.tab-icon{display:block;font-size:23px;margin-bottom:2px}
+.history-date{font-size:18px;font-weight:800}.history-summary,.exercise-category,.progress-detail{color:var(--muted);font-size:14px;margin-top:5px}
+.delete-workout{margin-top:12px;background:#fee2e2;color:var(--danger);border:0;padding:9px 12px;border-radius:9px;font-weight:700}
+.progress-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);gap:10px}.progress-row:last-child{border-bottom:0}.progress-date,.exercise-name{font-weight:700}.progress-value{font-weight:800;white-space:nowrap}
+.exercise-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid var(--border)}.exercise-row:last-child{border-bottom:0}.exercise-actions{display:flex;gap:6px}.small-button{border:0;border-radius:8px;padding:8px 10px;font-weight:700}.edit-button{background:#e5e7eb;color:#111827}.delete-button{background:#fee2e2;color:#dc2626}
+.empty{text-align:center;padding:40px 15px;color:var(--muted)}.toast{position:fixed;left:50%;bottom:95px;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:100}.toast.show{opacity:1}
+@media(max-width:390px){.round{grid-template-columns:60px 1fr 1fr 42px;gap:5px}input{font-size:14px}}
+</style>
+</head>
+<body>
+<header><h1>My Workout</h1><p id="workoutDate"></p></header>
+<main>
+<section id="workoutScreen" class="screen active"><div id="workoutContainer"></div><button class="save-button" onclick="saveWorkout()">✓ SAVE WORKOUT</button><button class="secondary-button" onclick="startNewWorkout()">Start New Workout</button></section>
+<section id="historyScreen" class="screen"><h2 class="section-title">Workout History</h2><div id="historyContainer"></div></section>
+<section id="progressScreen" class="screen"><h2 class="section-title">Progress</h2><div id="progressContainer"></div></section>
+<section id="exerciseScreen" class="screen"><h2 class="section-title">Exercises</h2><div class="add-form"><h3>Add Exercise</h3><input id="newExerciseName" placeholder="Exercise name"><select id="newExerciseMovement"><option>Legs</option><option>Push</option><option>Pull</option><option>Hinge</option><option>Core</option></select><button class="save-button" onclick="addExercise()">+ Add Exercise</button></div><div id="exerciseList"></div></section>
+</main>
+<nav class="tabs">
+<button class="tab active" onclick="showScreen('workoutScreen',this)"><span class="tab-icon">🏋️</span>Workout</button>
+<button class="tab" onclick="showScreen('historyScreen',this)"><span class="tab-icon">📅</span>History</button>
+<button class="tab" onclick="showScreen('progressScreen',this)"><span class="tab-icon">📈</span>Progress</button>
+<button class="tab" onclick="showScreen('exerciseScreen',this)"><span class="tab-icon">⚙️</span>Exercises</button>
+</nav>
+<div id="toast" class="toast"></div>
+<script>
+const MOVEMENTS=["Legs","Push","Pull","Hinge","Core"];
+const DEFAULT_EXERCISES=[
+{id:"legs-squat",movement:"Legs",name:"Squat"},
+{id:"push-incline",movement:"Push",name:"Incline Bench Press"},
+{id:"pull-lat",movement:"Pull",name:"Lat Pulldown"},
+{id:"hinge-deadlift",movement:"Hinge",name:"Dumbbell Deadlift"},
+{id:"core-plank",movement:"Core",name:"Plank"}];
+let exercises=JSON.parse(localStorage.getItem("workoutExercises"))||DEFAULT_EXERCISES;
+let history=JSON.parse(localStorage.getItem("workoutHistory"))||[];
+function createSet(){return{weight:"",reps:"",completed:false}}
+function createNewWorkout(){return MOVEMENTS.map(m=>{const e=exercises.find(x=>x.movement===m);return{movement:m,exerciseId:e?e.id:"",sets:[createSet(),createSet(),createSet()]}})}
+let currentWorkout=JSON.parse(localStorage.getItem("currentWorkout"))||createNewWorkout();
+function saveCurrentWorkout(){localStorage.setItem("currentWorkout",JSON.stringify(currentWorkout))}
+function getPreviousWorkout(movement,exerciseId){for(const w of history){const m=w.exercises.find(e=>e.movement===movement&&e.exerciseId===exerciseId);if(m&&m.sets.some(s=>s.weight||s.reps))return m}return null}
+function renderWorkout(){const c=document.getElementById("workoutContainer");c.innerHTML="";currentWorkout.forEach((m,mi)=>{const card=document.createElement("div");card.className="movement-card";card.innerHTML=`<div class="movement-title">${m.movement.toUpperCase()}</div>`;const sel=document.createElement("select");sel.className="exercise-select";exercises.filter(e=>e.movement===m.movement).forEach(e=>{const o=document.createElement("option");o.value=e.id;o.textContent=e.name;o.selected=e.id===m.exerciseId;sel.appendChild(o)});sel.onchange=()=>{m.exerciseId=sel.value;saveCurrentWorkout();renderWorkout()};card.appendChild(sel);const prev=getPreviousWorkout(m.movement,m.exerciseId);if(prev){const b=document.createElement("div");b.className="previous";b.innerHTML="<strong>Last time:</strong> "+prev.sets.map((s,i)=>{if(!s.weight&&!s.reps)return"";return m.movement==="Core"?`R${i+1}: ${s.reps||"—"} sec`:`R${i+1}: ${s.weight||"—"} lb × ${s.reps||"—"}`}).filter(Boolean).join(" &nbsp; • &nbsp; ");card.appendChild(b)}m.sets.forEach((s,si)=>{const row=document.createElement("div");row.className="round";const l=document.createElement("div");l.className="round-label";l.textContent=`Round ${si+1}`;row.appendChild(l);const w=document.createElement("input");w.type="number";w.inputMode="decimal";w.placeholder="Weight";w.value=s.weight;w.oninput=()=>{s.weight=w.value;saveCurrentWorkout()};row.appendChild(w);const r=document.createElement("input");r.type="number";r.inputMode="numeric";r.placeholder=m.movement==="Core"?"Seconds":"Reps";r.value=s.reps;r.oninput=()=>{s.reps=r.value;saveCurrentWorkout()};row.appendChild(r);const d=document.createElement("button");d.className="complete "+(s.completed?"done":"");d.textContent=s.completed?"✓":"";d.onclick=()=>{s.completed=!s.completed;saveCurrentWorkout();renderWorkout()};row.appendChild(d);card.appendChild(row)});c.appendChild(card)})}
+function saveWorkout(){const n=currentWorkout.flatMap(m=>m.sets).filter(s=>s.completed).length;if(!n&&!confirm("You haven't marked any rounds complete. Save anyway?"))return;history.unshift({id:Date.now().toString(),date:new Date().toISOString(),exercises:JSON.parse(JSON.stringify(currentWorkout))});localStorage.setItem("workoutHistory",JSON.stringify(history));showToast("Workout saved!");renderHistory();renderProgress()}
+function startNewWorkout(){if(!confirm("Start a new workout? Your current entries will be cleared."))return;currentWorkout=createNewWorkout();saveCurrentWorkout();renderWorkout();showToast("New workout started")}
+function renderHistory(){const c=document.getElementById("historyContainer");c.innerHTML="";if(!history.length){c.innerHTML='<div class="empty">No workouts saved yet.</div>';return}history.forEach((w,i)=>{const card=document.createElement("div");card.className="history-card";const date=new Date(w.date),n=w.exercises.flatMap(e=>e.sets).filter(s=>s.completed).length;card.innerHTML=`<div class="history-date">${date.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</div><div class="history-summary">${n} rounds completed</div><button class="delete-workout">Delete Workout</button>`;card.querySelector("button").onclick=e=>{e.stopPropagation();deleteWorkout(i)};card.onclick=()=>showWorkoutDetails(w);c.appendChild(card)})}
+function deleteWorkout(i){if(!confirm("Delete this workout permanently?"))return;history.splice(i,1);localStorage.setItem("workoutHistory",JSON.stringify(history));renderHistory();renderProgress();showToast("Workout deleted")}
+function showWorkoutDetails(w){const c=document.getElementById("historyContainer");c.innerHTML="";const back=document.createElement("button");back.className="secondary-button";back.textContent="← Back to History";back.onclick=renderHistory;c.appendChild(back);w.exercises.forEach(m=>{const card=document.createElement("div");card.className="history-card";const e=exercises.find(x=>x.id===m.exerciseId);card.innerHTML=`<div class="movement-title">${m.movement.toUpperCase()}</div><h3>${e?e.name:"Exercise"}</h3>`;m.sets.forEach((s,i)=>{const r=document.createElement("div");r.style.padding="8px 0";r.textContent=m.movement==="Core"?`Round ${i+1}: ${s.reps||"—"} sec ${s.completed?"✓":""}`:`Round ${i+1}: ${s.weight||"—"} lb × ${s.reps||"—"} ${s.completed?"✓":""}`;card.appendChild(r)});c.appendChild(card)})}
+function renderProgress(){const c=document.getElementById("progressContainer");c.innerHTML="";if(!history.length){c.innerHTML='<div class="empty">Complete a workout to start tracking your progress.</div>';return}MOVEMENTS.forEach(m=>{const records=[];history.slice().reverse().forEach(w=>{const ml=w.exercises.find(e=>e.movement===m);if(!ml)return;const e=exercises.find(x=>x.id===ml.exerciseId);if(!e)return;ml.sets.forEach((s,i)=>{if(s.weight||s.reps)records.push({date:w.date,exercise:e.name,round:i+1,weight:s.weight||"—",reps:s.reps||"—"})})});if(!records.length)return;const card=document.createElement("div");card.className="progress-card";card.innerHTML=`<div class="movement-title">${m.toUpperCase()}</div><h3>${records[records.length-1].exercise}</h3>`;const weights=records.map(r=>Number(r.weight)).filter(n=>!isNaN(n)&&n>0);if(weights.length){const b=document.createElement("div");b.style.marginBottom="15px";b.innerHTML=`<strong>Best Weight:</strong> ${Math.max(...weights)} lb`;card.appendChild(b)}const h=document.createElement("h4");h.textContent="Progression";card.appendChild(h);records.forEach(r=>{const row=document.createElement("div");row.className="progress-row";row.innerHTML=`<div><div class="progress-date">${new Date(r.date).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}</div><div class="progress-detail">${r.exercise} • Round ${r.round}</div></div><div class="progress-value">${m==="Core"?`${r.reps} sec`:`${r.weight} lb × ${r.reps}`}</div>`;card.appendChild(row)});c.appendChild(card)})}
+function saveExercises(){localStorage.setItem("workoutExercises",JSON.stringify(exercises))}
+function renderExercises(){const c=document.getElementById("exerciseList");c.innerHTML="";MOVEMENTS.forEach(m=>{const card=document.createElement("div");card.className="exercise-card";card.innerHTML=`<h3>${m}</h3>`;exercises.filter(e=>e.movement===m).forEach(e=>{const row=document.createElement("div");row.className="exercise-row";row.innerHTML=`<div><div class="exercise-name">${e.name}</div><div class="exercise-category">${e.movement}</div></div>`;const a=document.createElement("div");a.className="exercise-actions";const ed=document.createElement("button");ed.className="small-button edit-button";ed.textContent="Edit";ed.onclick=()=>editExercise(e.id);const dl=document.createElement("button");dl.className="small-button delete-button";dl.textContent="Delete";dl.onclick=()=>deleteExercise(e.id);a.append(ed,dl);row.appendChild(a);card.appendChild(row)});c.appendChild(card)})}
+function addExercise(){const n=document.getElementById("newExerciseName"),m=document.getElementById("newExerciseMovement"),name=n.value.trim();if(!name){alert("Please enter an exercise name.");return}exercises.push({id:Date.now().toString(),movement:m.value,name});saveExercises();n.value="";renderExercises();renderWorkout();showToast("Exercise added")}
+function editExercise(id){const e=exercises.find(x=>x.id===id);const n=prompt("Edit exercise name:",e.name);if(!n||!n.trim())return;e.name=n.trim();saveExercises();renderExercises();renderWorkout();showToast("Exercise updated")}
+function deleteExercise(id){const e=exercises.find(x=>x.id===id);if(exercises.filter(x=>x.movement===e.movement).length<=1){alert(`You need at least one exercise under ${e.movement}.`);return}if(!confirm(`Delete ${e.name}?`))return;exercises=exercises.filter(x=>x.id!==id);currentWorkout.forEach(m=>{if(m.exerciseId===id){const r=exercises.find(x=>x.movement===m.movement);if(r)m.exerciseId=r.id}});saveExercises();saveCurrentWorkout();renderExercises();renderWorkout();showToast("Exercise deleted")}
+function showScreen(id,b){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));b.classList.add("active");if(id==="historyScreen")renderHistory();if(id==="progressScreen")renderProgress();if(id==="exerciseScreen")renderExercises()}
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
+document.getElementById("workoutDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+renderWorkout();renderHistory();renderProgress();renderExercises();
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
+</script>
+</body>
+</html>
